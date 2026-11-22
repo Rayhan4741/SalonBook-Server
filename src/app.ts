@@ -8,6 +8,8 @@ import { toNodeHandler } from "better-auth/node";
 import { config } from "./config/env";
 import { auth } from "./auth/betterAuth";
 import { notFoundHandler, errorHandler } from "./middleware/errorMiddleware";
+import { correlationIdMiddleware } from "./middleware/correlationId";
+import { timingMiddleware } from "./middleware/timingMiddleware";
 
 import serviceRoutes from "./routes/serviceRoutes";
 import appointmentRoutes from "./routes/appointmentRoutes";
@@ -16,9 +18,14 @@ import profileRoutes from "./routes/profileRoutes";
 import dashboardRoutes from "./routes/dashboardRoutes";
 import paymentRoutes from "./routes/paymentRoutes";
 import uploadRoutes from "./routes/uploadRoutes";
+import healthRoutes from "./routes/healthRoutes";
 
 export const createApp = (): Application => {
   const app: Application = express();
+
+  // Correlation tracking & latency metrics
+  app.use(correlationIdMiddleware);
+  app.use(timingMiddleware);
 
   // Helmet Security Headers
   app.use(
@@ -75,14 +82,7 @@ export const createApp = (): Application => {
   app.all("/api/auth/*", toNodeHandler(auth));
 
   // Health Check Endpoint
-  app.get("/api/health", (req: Request, res: Response) => {
-    res.json({
-      status: "healthy",
-      service: "SalonBook API",
-      timestamp: new Date().toISOString(),
-      environment: config.nodeEnv,
-    });
-  });
+  app.use("/api/health", healthRoutes);
 
   // REST Application Endpoints
   app.use("/api/services", serviceRoutes);

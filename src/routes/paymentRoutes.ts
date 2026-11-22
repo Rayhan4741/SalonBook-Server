@@ -3,6 +3,7 @@ import express from "express";
 import {
   createCheckoutSession,
   getAppointmentPaymentStatus,
+  getMyTransactions,
   handleStripeWebhook,
 } from "../controllers/paymentController";
 import {
@@ -28,6 +29,16 @@ router.post(
   checkBlockedUser,
   requireCustomer,
   createCheckoutSession
+);
+
+// Customer views their verified Stripe payment history
+router.get(
+  "/my-transactions",
+  express.json(),
+  authenticate,
+  checkBlockedUser,
+  requireCustomer,
+  getMyTransactions
 );
 
 // Verified payment status

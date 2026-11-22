@@ -187,6 +187,26 @@ export const getAppointmentPaymentStatus = async (req: AuthRequest, res: Respons
   }
 };
 
+// GET /api/payments/my-transactions - Customer's verified Stripe payment transactions
+export const getMyTransactions = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = req.user!;
+    const transactions = await Transaction.find({ customerId: user.id })
+      .populate({
+        path: "appointmentId",
+        populate: { path: "serviceId", select: "serviceName price duration category" }
+      })
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: transactions,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: "Failed to retrieve payment history." });
+  }
+};
+
 // POST /api/payments/webhook - Verified Stripe webhook
 export const handleStripeWebhook = async (req: Request, res: Response): Promise<void> => {
   const sig = req.headers["stripe-signature"];

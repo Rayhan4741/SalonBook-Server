@@ -1,0 +1,31 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "SalonBook REST API",
+    "version": "1.0.0",
+    "description": "API Documentation for SalonBook luxury salon appointment booking platform."
+  },
+  "servers": [
+    { "url": "http://localhost:5000", "description": "Local Development Server" }
+  ],
+  "paths": {
+    "/api/services": {
+      "get": {
+        "summary": "List active salon services with optional search, category, and sort",
+        "responses": { "200": { "description": "Array of services" } }
+      }
+    },
+    "/api/appointments": {
+      "post": {
+        "summary": "Submit new appointment reservation (conflict checked)",
+        "responses": { "201": { "description": "Created appointment" }, "409": { "description": "Slot conflict" } }
+      }
+    },
+    "/api/payments/checkout-session": {
+      "post": {
+        "summary": "Generate Stripe checkout session url for confirmed appointment",
+        "responses": { "200": { "description": "Stripe URL" } }
+      }
+    }
+  }
+}

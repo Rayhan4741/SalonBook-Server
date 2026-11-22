@@ -111,7 +111,11 @@ npm start
 
 ---
 
-## 🔒 Security Practices
+## 🔗 Repository Reference
+
+- **GitHub Repository**: [SalonBook Official Repository](https://github.com/Rayhan4741/SalonBook)
+- **Live Deployment Platform**: [SalonBook Live Backend](https://salonbook-api.onrender.com)
+
 
 1. **Role Enforcement**: Client-provided roles are rejected. Server models and middleware query trusted database records.
 2. **Blocked User Protection**: Blocked users are immediately forbidden from booking, paying, or accessing protected routes.

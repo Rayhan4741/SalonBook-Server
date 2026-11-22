@@ -91,6 +91,7 @@ export const createApp = (): Application => {
   app.use("/api/admin", adminRoutes);
   app.use("/api/profile", profileRoutes);
   app.use("/api/dashboard", dashboardRoutes);
+  app.use("/api/customer/dashboard", dashboardRoutes);
   app.use("/api/payments", paymentRoutes);
   app.use("/api/uploads", uploadRoutes);
 

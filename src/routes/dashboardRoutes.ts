@@ -21,6 +21,14 @@ router.get(
   getCustomerDashboard
 );
 
+router.get(
+  "/",
+  authenticate,
+  checkBlockedUser,
+  requireCustomer,
+  getCustomerDashboard
+);
+
 // Admin Dashboard
 router.get(
   "/admin",

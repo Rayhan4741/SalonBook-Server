@@ -1,8 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 import { config } from "../config/env";
 import { User, IUser } from "../models/User";
 import { auth } from "../auth/betterAuth";
+import { getNativeClient } from "../config/db";
 
 export interface AuthenticatedUser {
   id: string;
@@ -38,23 +40,32 @@ export const authenticate = async (
         userEmail = session.user.email;
       }
     } catch (sessionErr) {
-      // Better auth session check failed, fall through to JWT header verification
+      // Better auth session check failed, fall through to token extraction
     }
 
-    // 2. If no session, extract from Authorization Bearer token
+    // 2. Extract from Authorization Bearer token (JWT or Better Auth Session token)
     if (!userId && req.headers.authorization && req.headers.authorization.startsWith("Bearer ")) {
       const token = req.headers.authorization.split(" ")[1];
       if (token) {
+        // A. Attempt standard JWT verification
         try {
           const decoded = jwt.verify(token, config.betterAuthSecret) as any;
           userId = decoded.sub || decoded.id || decoded.userId;
           userEmail = decoded.email;
-        } catch (jwtErr: any) {
-          res.status(401).json({
-            success: false,
-            message: "Authentication token is invalid or expired. Please sign in again.",
-          });
-          return;
+        } catch {
+          // B. If not a standard signed JWT, check Better Auth session collection
+          try {
+            const nativeDb = getNativeClient().db();
+            const sessionDoc = await nativeDb.collection("session").findOne({
+              token,
+              expiresAt: { $gt: new Date() },
+            });
+            if (sessionDoc && sessionDoc.userId) {
+              userId = sessionDoc.userId.toString();
+            }
+          } catch (sessionLookupErr) {
+            console.error("Session lookup error:", sessionLookupErr);
+          }
         }
       }
     }
@@ -68,9 +79,18 @@ export const authenticate = async (
     }
 
     // 3. Always fetch fresh user state from server database (source of truth for role & isBlocked)
-    const dbUser = await User.findOne(
-      userId ? { $or: [{ _id: userId.match(/^[0-9a-fA-F]{24}$/) ? userId : null }, { id: userId }, { email: userEmail }] } : { email: userEmail }
-    );
+    const queryConditions: any[] = [];
+    if (userId) {
+      if (userId.match(/^[0-9a-fA-F]{24}$/)) {
+        queryConditions.push({ _id: new mongoose.Types.ObjectId(userId) });
+      }
+      queryConditions.push({ id: userId });
+    }
+    if (userEmail) {
+      queryConditions.push({ email: userEmail.toLowerCase() });
+    }
+
+    const dbUser = queryConditions.length > 0 ? await User.findOne({ $or: queryConditions }) : null;
 
     if (!dbUser) {
       res.status(401).json({

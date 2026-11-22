@@ -51,12 +51,21 @@ export const getUsers = async (req: AuthRequest, res: Response): Promise<void> =
   }
 };
 
+// Helper for safe user lookup (handles both ObjectId and Better Auth string id)
+const findUserByIdSafe = async (id: string) => {
+  if (!id) return null;
+  const isMongoId = mongoose.Types.ObjectId.isValid(id);
+  return User.findOne(
+    isMongoId ? { $or: [{ _id: new mongoose.Types.ObjectId(id) }, { id }] } : { id }
+  );
+};
+
 // Admin: Get user by ID
 export const getUserById = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
 
-    const user = await User.findById(id).select("-password");
+    const user = await findUserByIdSafe(id);
     if (!user) {
       res.status(404).json({ success: false, message: "User not found." });
       return;
@@ -82,7 +91,7 @@ export const blockUser = async (req: AuthRequest, res: Response): Promise<void> 
       return;
     }
 
-    const targetUser = await User.findById(id);
+    const targetUser = await findUserByIdSafe(id);
     if (!targetUser) {
       res.status(404).json({ success: false, message: "User not found." });
       return;
@@ -114,7 +123,7 @@ export const unblockUser = async (req: AuthRequest, res: Response): Promise<void
   try {
     const id = req.params.id as string;
 
-    const targetUser = await User.findById(id);
+    const targetUser = await findUserByIdSafe(id);
     if (!targetUser) {
       res.status(404).json({ success: false, message: "User not found." });
       return;

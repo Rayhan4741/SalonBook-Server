@@ -74,12 +74,13 @@ export const createApp = (): Application => {
   // Stripe webhook route with raw body (MUST be placed before express.json)
   app.use("/api/payments/webhook", express.raw({ type: "application/json" }));
 
+  // Better Auth Node Handler (Express Compatible) - Must be before express.json to preserve request stream
+  app.all("/api/auth/*", toNodeHandler(auth));
+  app.all("/api/auth", toNodeHandler(auth));
+
   // JSON and URL-encoded body parser for all other endpoints
   app.use(express.json({ limit: "10mb" }));
   app.use(express.urlencoded({ extended: true, limit: "10mb" }));
-
-  // Better Auth Node Handler (Express Compatible)
-  app.all("/api/auth/*", toNodeHandler(auth));
 
   // Health Check Endpoint
   app.use("/api/health", healthRoutes);

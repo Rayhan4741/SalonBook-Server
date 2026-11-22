@@ -137,6 +137,43 @@ export const getAppointmentPaymentStatus = async (req: AuthRequest, res: Respons
 
     const transaction = await Transaction.findOne({ appointmentId: appointment._id });
 
+    // Resilient fallback for local development / immediate redirect:
+    // If appointment is not marked paid yet, but a Stripe session_id is provided, verify directly with Stripe API
+    const sessionId = req.query.session_id as string | undefined;
+    if (appointment.paymentStatus !== "paid" && sessionId && config.stripeSecretKey) {
+      try {
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+        const sessionApptId = (session.metadata?.appointmentId || session.client_reference_id)?.toString();
+
+        if (session.payment_status === "paid" && sessionApptId === appointment._id.toString()) {
+          appointment.paymentStatus = "paid";
+          await appointment.save();
+
+          if (!transaction) {
+            const newTx = await Transaction.create({
+              appointmentId: appointment._id,
+              customerId: appointment.customerId,
+              amount: appointment.servicePrice,
+              currency: session.currency?.toUpperCase() || "USD",
+              stripeSessionId: session.id,
+              status: "paid",
+            });
+            res.json({
+              success: true,
+              data: {
+                appointment,
+                paymentStatus: "paid",
+                transaction: newTx,
+              },
+            });
+            return;
+          }
+        }
+      } catch (stripeErr: any) {
+        console.warn("Direct Stripe session verification note:", stripeErr.message);
+      }
+    }
+
     res.json({
       success: true,
       data: {

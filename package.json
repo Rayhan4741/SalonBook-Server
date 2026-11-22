@@ -1,6 +1,6 @@
 {
   "name": "salonbook-server",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "SalonBook REST API Backend",
   "main": "dist/server.js",
   "scripts": {
@@ -10,7 +10,14 @@
     "start": "node dist/server.js",
     "seed": "ts-node-dev --transpile-only src/scripts/seed.ts"
   },
-  "keywords": ["salon", "booking", "express", "better-auth", "stripe", "mongodb"],
+  "keywords": [
+    "salon",
+    "booking",
+    "express",
+    "better-auth",
+    "stripe",
+    "mongodb"
+  ],
   "author": "SalonBook Team",
   "license": "ISC",
   "dependencies": {
